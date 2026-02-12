@@ -1,3 +1,4 @@
+import traceback
 import gradio as gr
 
 from prompt2reel.config.settings import DEFAULT_SETTINGS
@@ -25,24 +26,42 @@ button.primary {
 """
 
 
-def build_pipeline() -> ShortVideoPipeline:
+def _validate_settings() -> None:
     if not DEFAULT_SETTINGS.gemini_api_key:
         raise ValueError("GEMINI_API_KEY is required.")
+    if not DEFAULT_SETTINGS.wan_model_id:
+        raise ValueError(
+            "WAN_MODEL_ID is required. Set a valid Hugging Face repo id for your WAN model. "
+            "If it is gated/private, set HF_TOKEN too."
+        )
+
+
+def build_pipeline() -> ShortVideoPipeline:
+    _validate_settings()
     return ShortVideoPipeline(DEFAULT_SETTINGS)
 
 
 def run_pipeline(idea: str):
-    pipeline = build_pipeline()
-    final_video, prompt_dump = pipeline.run(idea)
-    preview = "\n\n".join([f"{k}:\n{v}" for k, v in prompt_dump.items()])
-    return final_video, preview
+    try:
+        pipeline = build_pipeline()
+        final_video, prompt_dump = pipeline.run(idea)
+        preview = "\n\n".join([f"{k}:\n{v}" for k, v in prompt_dump.items()])
+        return final_video, preview, "✅ Generation completed"
+    except Exception as exc:
+        tb = traceback.format_exc(limit=2)
+        return None, "", f"❌ {exc}\n\n{tb}"
 
 
 def launch() -> None:
-    with gr.Blocks(theme=gr.themes.Soft(), css=APPLE_CINEMATIC_CSS) as demo:
+    with gr.Blocks() as demo:
         gr.Markdown("""
         # 🎬 Prompt2Reel — Cinematic Short Generator
-        Turn one idea into a continuity-preserving 20–24s short with Gemini + Wan 2.2.
+        Turn one idea into a continuity-preserving 20–24s short with Gemini + Wan.
+
+        **Before generating**, set:
+        - `GEMINI_API_KEY`
+        - `WAN_MODEL_ID` (valid, accessible model repo)
+        - `HF_TOKEN` (if model is gated/private)
         """)
 
         with gr.Column(elem_id="glass"):
@@ -53,12 +72,13 @@ def launch() -> None:
             )
             btn = gr.Button("Generate Short", variant="primary")
 
+        status = gr.Textbox(label="Status", lines=4)
         output_video = gr.Video(label="Final Short")
         debug_prompts = gr.Textbox(label="Generated Prompt Plan", lines=12)
 
-        btn.click(fn=run_pipeline, inputs=idea, outputs=[output_video, debug_prompts])
+        btn.click(fn=run_pipeline, inputs=idea, outputs=[output_video, debug_prompts, status])
 
-    demo.launch(share=True)
+    demo.launch(share=True, theme=gr.themes.Soft(), css=APPLE_CINEMATIC_CSS)
 
 
 if __name__ == "__main__":

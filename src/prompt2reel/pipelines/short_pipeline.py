@@ -14,7 +14,7 @@ class ShortVideoPipeline:
         os.makedirs(self.settings.output_dir, exist_ok=True)
         self.planner = PromptPlanner(settings.gemini_api_key, settings.gemini_model)
         self.memory = StoryMemory()
-        self.video = WanVideoGenerator(settings.wan_model_id, settings.device)
+        self.video = WanVideoGenerator(settings.wan_model_id, settings.device, settings.hf_token)
 
     def _paths(self) -> Dict[str, str]:
         od = self.settings.output_dir

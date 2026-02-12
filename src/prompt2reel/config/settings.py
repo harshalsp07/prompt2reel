@@ -6,7 +6,9 @@ import os
 class AppSettings:
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
-    wan_model_id: str = os.getenv("WAN_MODEL_ID", "Wan-AI/Wan2.2-T2V")
+    # Use an explicit placeholder to force user choice; many WAN repos are gated/private.
+    wan_model_id: str = os.getenv("WAN_MODEL_ID", "")
+    hf_token: str = os.getenv("HF_TOKEN", "")
     device: str = os.getenv("DEVICE", "cuda")
     output_dir: str = os.getenv("OUTPUT_DIR", "outputs")
     fps: int = int(os.getenv("FPS", "8"))

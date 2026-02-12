@@ -1,6 +1,5 @@
 from typing import List
 import cv2
-from moviepy.editor import VideoFileClip, concatenate_videoclips
 
 
 def extract_last_frame(video_path: str, output_image_path: str) -> str:
@@ -16,6 +15,8 @@ def extract_last_frame(video_path: str, output_image_path: str) -> str:
 
 
 def merge_videos(paths: List[str], output_path: str) -> str:
+    from moviepy.editor import VideoFileClip, concatenate_videoclips
+
     clips = [VideoFileClip(p) for p in paths]
     final = concatenate_videoclips(clips, method="compose")
     final.write_videofile(output_path, codec="libx264", audio=False, logger=None)

@@ -1,8 +1,6 @@
 import json
 from typing import Dict
 
-import google.generativeai as genai
-
 
 SYSTEM_TEMPLATE = """
 You are a cinematic short-video planner.
@@ -30,14 +28,39 @@ Idea:
 
 class PromptPlanner:
     def __init__(self, api_key: str, model_name: str):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
+        self._mode = "legacy"
+        self.client = None
+        self.model = None
+
+        try:
+            from google import genai  # type: ignore
+
+            self.client = genai.Client(api_key=api_key)
+            self._mode = "genai"
+        except Exception:
+            # Backward compatibility for environments that still only have google-generativeai.
+            import google.generativeai as genai  # type: ignore
+
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel(model_name)
+            self._mode = "legacy"
 
     def generate(self, idea: str) -> Dict[str, str]:
-        response = self.model.generate_content(SYSTEM_TEMPLATE.format(idea=idea))
-        text = response.text
+        prompt = SYSTEM_TEMPLATE.format(idea=idea)
+
+        if self._mode == "genai":
+            response = self.client.models.generate_content(model=self.model_name, contents=prompt)
+            text = response.text or ""
+        else:
+            response = self.model.generate_content(prompt)
+            text = response.text
+
         start = text.find("{")
         end = text.rfind("}") + 1
+        if start < 0 or end <= start:
+            raise ValueError("Gemini response did not contain JSON payload.")
+
         payload = json.loads(text[start:end])
         required = ["part1", "part2", "part3", "character_memory", "world_memory"]
         missing = [k for k in required if k not in payload]

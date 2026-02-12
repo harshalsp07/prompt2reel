@@ -3,11 +3,20 @@
 Production-ready, Colab-friendly pipeline for generating a 20–24s short video from one idea:
 
 1. Gemini generates 3 scene prompts.
-2. Wan 2.2 renders 3 sequential clips (8s each).
+2. Wan-compatible model renders 3 sequential clips (8s each).
 3. Last frame of each clip conditions the next.
 4. Story-memory embeddings enforce continuity.
 5. Final clips are stitched into one short.
 6. Apple-style Gradio UI runs directly in Google Colab.
+
+## Why your previous run failed
+
+The earlier default `WAN_MODEL_ID="Wan-AI/Wan2.2-T2V"` is not publicly accessible in many environments, which causes Hugging Face `401/RepositoryNotFound` errors. This repo now:
+
+- requires explicit `WAN_MODEL_ID` configuration,
+- accepts `HF_TOKEN` for gated/private models,
+- loads the video model lazily only when generation starts,
+- shows user-friendly error messages in the UI instead of crashing the whole app.
 
 ## Highlights
 
@@ -15,6 +24,7 @@ Production-ready, Colab-friendly pipeline for generating a 20–24s short video 
 - **Story consistency memory embedding**: lightweight semantic memory store + retrieval injected into later prompts.
 - **Production repo layout** with modular services and typed config.
 - **Colab-ready cinematic UI** with progress feedback and generated prompt preview.
+- **Gemini SDK compatibility**: uses modern `google.genai` when available and falls back to `google.generativeai`.
 
 ## Quickstart (Google Colab)
 
@@ -23,25 +33,46 @@ Production-ready, Colab-friendly pipeline for generating a 20–24s short video 
 %cd prompt2reel
 !bash scripts/colab_setup.sh
 !pip install -e .
-!python -m prompt2reel.ui.colab_app
 ```
 
-Then open the Gradio public URL shown in output.
-
-## Environment Variables
-
-Set in Colab before launch:
+Set required environment variables:
 
 ```python
 import os
 os.environ["GEMINI_API_KEY"] = "your_key"
+os.environ["WAN_MODEL_ID"] = "<your-accessible-video-model-repo-or-local-path>"
+# If model is gated/private on Hugging Face:
+os.environ["HF_TOKEN"] = "hf_xxx"
 ```
 
-Optional:
+Launch app:
 
-- `WAN_MODEL_ID` (default: `Wan-AI/Wan2.2-T2V`)
+```bash
+!python -m prompt2reel.ui.colab_app
+```
+
+
+### Optional: pre-download WAN model (recommended in Colab)
+
+```bash
+# If model is gated/private, set HF_TOKEN first
+!export WAN_MODEL_ID="<your-model-repo>"
+!export HF_TOKEN="hf_xxx"
+!bash scripts/setup_wan22.sh
+
+# Then point app to local downloaded files
+import os
+os.environ["WAN_MODEL_ID"] = "models/wan22"
+```
+
+## Optional Environment Variables
+
+- `GEMINI_MODEL` (default: `gemini-1.5-pro`)
 - `DEVICE` (default: `cuda`)
 - `OUTPUT_DIR` (default: `outputs`)
+- `FRAMES_PER_CLIP` (default: `64`)
+- `FPS` (default: `8`)
+- `GUIDANCE_SCALE` (default: `6.5`)
 
 ## Project Structure
 
@@ -57,8 +88,3 @@ scripts/
 tests/
   test_memory.py  # Story memory behavior smoke tests
 ```
-
-## Notes
-
-- Wan 2.2 APIs vary by release. `video_generator.py` is written to degrade gracefully if a specific argument isn't available.
-- For minimal VRAM, prefer 480p/24fps or lower and 48–64 frames/clip.
