@@ -1,0 +1,15 @@
+torch
+torchvision
+torchaudio
+diffusers>=0.30.0
+transformers>=4.42.0
+accelerate>=0.33.0
+xformers
+google-genai>=1.0.0
+google-generativeai>=0.7.2
+gradio>=4.44.0
+opencv-python
+moviepy
+ffmpeg-python
+pydantic>=2.8.0
+huggingface_hub>=0.34.0
