@@ -1,4 +1,5 @@
 import traceback
+import inspect
 import gradio as gr
 
 from prompt2reel.config.settings import DEFAULT_SETTINGS
@@ -53,7 +54,14 @@ def run_pipeline(idea: str):
 
 
 def launch() -> None:
-    with gr.Blocks() as demo:
+    blocks_kwargs = {}
+    blocks_sig = inspect.signature(gr.Blocks)
+    if "theme" in blocks_sig.parameters:
+        blocks_kwargs["theme"] = gr.themes.Soft()
+    if "css" in blocks_sig.parameters:
+        blocks_kwargs["css"] = APPLE_CINEMATIC_CSS
+
+    with gr.Blocks(**blocks_kwargs) as demo:
         gr.Markdown("""
         # 🎬 Prompt2Reel — Cinematic Short Generator
         Turn one idea into a continuity-preserving 20–24s short with Gemini + Wan.
@@ -78,7 +86,14 @@ def launch() -> None:
 
         btn.click(fn=run_pipeline, inputs=idea, outputs=[output_video, debug_prompts, status])
 
-    demo.launch(share=True, theme=gr.themes.Soft(), css=APPLE_CINEMATIC_CSS)
+    launch_kwargs = {"share": True}
+    launch_sig = inspect.signature(demo.launch)
+    if "theme" in launch_sig.parameters and "theme" not in blocks_kwargs:
+        launch_kwargs["theme"] = gr.themes.Soft()
+    if "css" in launch_sig.parameters and "css" not in blocks_kwargs:
+        launch_kwargs["css"] = APPLE_CINEMATIC_CSS
+
+    demo.launch(**launch_kwargs)
 
 
 if __name__ == "__main__":

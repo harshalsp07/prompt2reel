@@ -1,8 +1,9 @@
 from typing import List
-import cv2
 
 
 def extract_last_frame(video_path: str, output_image_path: str) -> str:
+    import cv2
+
     cap = cv2.VideoCapture(video_path)
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     cap.set(cv2.CAP_PROP_POS_FRAMES, max(total - 1, 0))
